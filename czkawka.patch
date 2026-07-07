@@ -1,0 +1,648 @@
+diff --git a/czkawka_core/src/common/dir_traversal.rs b/czkawka_core/src/common/dir_traversal.rs
+index b682a61..3d02952 100644
+--- a/czkawka_core/src/common/dir_traversal.rs
++++ b/czkawka_core/src/common/dir_traversal.rs
+@@ -99,7 +99,7 @@ impl DirTraversalBuilder<'_, ()> {
+ }
+ 
+ impl<'b, F> DirTraversalBuilder<'b, F> {
+-    pub(crate) fn common_data(mut self, common_tool_data: &CommonToolData) -> Self {
++    pub fn common_data(mut self, common_tool_data: &CommonToolData) -> Self {
+         self.root_dirs = common_tool_data.directories.included_directories.clone();
+         self.root_files = common_tool_data.directories.included_files.clone();
+         self.extensions = Some(common_tool_data.extensions.clone());
+@@ -112,12 +112,12 @@ impl<'b, F> DirTraversalBuilder<'b, F> {
+         self
+     }
+ 
+-    pub(crate) fn stop_flag(mut self, stop_flag: &Arc<AtomicBool>) -> Self {
++    pub fn stop_flag(mut self, stop_flag: &Arc<AtomicBool>) -> Self {
+         self.stop_flag = Some(stop_flag.clone());
+         self
+     }
+ 
+-    pub(crate) fn progress_sender(mut self, progress_sender: Option<&'b Sender<ProgressData>>) -> Self {
++    pub fn progress_sender(mut self, progress_sender: Option<&'b Sender<ProgressData>>) -> Self {
+         self.progress_sender = progress_sender;
+         self
+     }
+@@ -142,7 +142,7 @@ impl<'b, F> DirTraversalBuilder<'b, F> {
+         self
+     }
+ 
+-    pub(crate) fn group_by<G, T>(self, group_by: G) -> DirTraversalBuilder<'b, G>
++    pub fn group_by<G, T>(self, group_by: G) -> DirTraversalBuilder<'b, G>
+     where
+         G: Fn(&FileEntry) -> T,
+     {
+@@ -164,7 +164,7 @@ impl<'b, F> DirTraversalBuilder<'b, F> {
+         }
+     }
+ 
+-    pub(crate) fn build(self) -> DirTraversal<'b, F> {
++    pub fn build(self) -> DirTraversal<'b, F> {
+         DirTraversal {
+             group_by: self.group_by.expect("could not build"),
+             root_dirs: self.root_dirs,
+@@ -210,7 +210,7 @@ where
+     T: Ord + PartialOrd,
+ {
+     #[fun_time(message = "run(collecting files/dirs)", level = "debug")]
+-    pub(crate) fn run(self) -> DirTraversalResult<T> {
++    pub fn run(self) -> DirTraversalResult<T> {
+         assert_ne!(self.tool_type, ToolType::None, "Tool type cannot be None");
+ 
+         let mut all_warnings = Vec::new();
+@@ -653,16 +653,16 @@ pub(crate) fn get_modified_time(metadata: &Metadata, warnings: &mut Vec<String>,
+ }
+ 
+ #[cfg(target_family = "windows")]
+-pub(crate) fn inode(_fe: &FileEntry) -> Option<u64> {
++pub fn inode(_fe: &FileEntry) -> Option<u64> {
+     None
+ }
+ 
+ #[cfg(target_family = "unix")]
+-pub(crate) fn inode(fe: &FileEntry) -> Option<u64> {
++pub fn inode(fe: &FileEntry) -> Option<u64> {
+     if let Ok(meta) = fs::metadata(&fe.path) { Some(meta.ino()) } else { None }
+ }
+ 
+-pub(crate) fn take_1_per_inode((k, mut v): (Option<u64>, Vec<FileEntry>)) -> Vec<FileEntry> {
++pub fn take_1_per_inode((k, mut v): (Option<u64>, Vec<FileEntry>)) -> Vec<FileEntry> {
+     if k.is_some() {
+         v.drain(1..);
+     }
+diff --git a/czkawka_core/src/common/directories.rs b/czkawka_core/src/common/directories.rs
+index 8fdb369..c1157b4 100644
+--- a/czkawka_core/src/common/directories.rs
++++ b/czkawka_core/src/common/directories.rs
+@@ -8,20 +8,20 @@ use crate::helpers::messages::Messages;
+ 
+ #[derive(Debug, Clone, Default)]
+ pub struct Directories {
+-    pub(crate) included_directories: Vec<PathBuf>,
+-    pub(crate) excluded_directories: Vec<PathBuf>,
+-    pub(crate) reference_directories: Vec<PathBuf>,
+-    pub(crate) included_files: Vec<PathBuf>,
+-    pub(crate) excluded_files: Vec<PathBuf>,
+-    pub(crate) reference_files: Vec<PathBuf>,
+-
+-    pub(crate) original_included_paths: Vec<PathBuf>,
+-    pub(crate) original_excluded_paths: Vec<PathBuf>,
+-    pub(crate) original_reference_paths: Vec<PathBuf>,
+-
+-    pub(crate) exclude_other_filesystems: Option<bool>,
++    pub included_directories: Vec<PathBuf>,
++    pub excluded_directories: Vec<PathBuf>,
++    pub reference_directories: Vec<PathBuf>,
++    pub included_files: Vec<PathBuf>,
++    pub excluded_files: Vec<PathBuf>,
++    pub reference_files: Vec<PathBuf>,
++
++    pub original_included_paths: Vec<PathBuf>,
++    pub original_excluded_paths: Vec<PathBuf>,
++    pub original_reference_paths: Vec<PathBuf>,
++
++    pub exclude_other_filesystems: Option<bool>,
+     #[cfg(target_family = "unix")]
+-    pub(crate) included_dev_ids: Vec<u64>,
++    pub included_dev_ids: Vec<u64>,
+ }
+ 
+ impl Directories {
+diff --git a/czkawka_core/src/common/progress_stop_handler.rs b/czkawka_core/src/common/progress_stop_handler.rs
+index 897e9ca..392bffe 100644
+--- a/czkawka_core/src/common/progress_stop_handler.rs
++++ b/czkawka_core/src/common/progress_stop_handler.rs
+@@ -12,7 +12,7 @@ use crate::common::progress_data::{CurrentStage, ProgressData};
+ pub const LOOP_DURATION: u32 = 20;
+ pub const SEND_PROGRESS_DATA_TIME_BETWEEN: u32 = 200;
+ 
+-pub(crate) struct ProgressThreadHandler {
++pub struct ProgressThreadHandler {
+     progress_thread_handle: JoinHandle<()>,
+     progress_thread_running: Arc<AtomicBool>,
+     progress_status: ProgressStatus,
+@@ -46,7 +46,7 @@ impl ProgressThreadHandler {
+ }
+ 
+ #[derive(Clone)]
+-pub(crate) struct ProgressStatus {
++pub struct ProgressStatus {
+     items_counter: Arc<AtomicUsize>,
+     size_counter: Arc<AtomicU64>,
+ }
+@@ -59,7 +59,7 @@ impl ProgressStatus {
+     }
+ }
+ 
+-pub(crate) fn prepare_thread_handler_common(
++pub fn prepare_thread_handler_common(
+     progress_sender: Option<&Sender<ProgressData>>,
+     sstage: CurrentStage,
+     max_items: usize,
+@@ -110,7 +110,7 @@ pub(crate) fn prepare_thread_handler_common(
+ }
+ 
+ #[inline]
+-pub(crate) fn check_if_stop_received(stop_flag: &Arc<AtomicBool>) -> bool {
++pub fn check_if_stop_received(stop_flag: &Arc<AtomicBool>) -> bool {
+     stop_flag.load(atomic::Ordering::Relaxed)
+ }
+ 
+diff --git a/czkawka_core/src/common/tool_data.rs b/czkawka_core/src/common/tool_data.rs
+index 8c8ff96..13845c8 100644
+--- a/czkawka_core/src/common/tool_data.rs
++++ b/czkawka_core/src/common/tool_data.rs
+@@ -21,23 +21,23 @@ use crate::helpers::messages::Messages;
+ 
+ #[derive(Debug, Clone, Default)]
+ pub struct CommonToolData {
+-    pub(crate) tool_type: ToolType,
+-    pub(crate) text_messages: Messages,
+-    pub(crate) directories: Directories,
+-    pub(crate) extensions: Extensions,
+-    pub(crate) excluded_items: ExcludedItems,
+-    pub(crate) recursive_search: bool,
+-    pub(crate) delete_method: DeleteMethod,
+-    pub(crate) maximal_file_size: u64,
+-    pub(crate) minimal_file_size: u64,
+-    pub(crate) stopped_search: bool,
+-    pub(crate) use_cache: bool,
+-    pub(crate) delete_outdated_cache: bool,
+-    pub(crate) save_also_as_json: bool,
+-    pub(crate) use_reference_folders: bool,
+-    pub(crate) dry_run: bool,
+-    pub(crate) move_to_trash: bool,
+-    pub(crate) hide_hard_links: bool,
++    pub tool_type: ToolType,
++    pub text_messages: Messages,
++    pub directories: Directories,
++    pub extensions: Extensions,
++    pub excluded_items: ExcludedItems,
++    pub recursive_search: bool,
++    pub delete_method: DeleteMethod,
++    pub maximal_file_size: u64,
++    pub minimal_file_size: u64,
++    pub stopped_search: bool,
++    pub use_cache: bool,
++    pub delete_outdated_cache: bool,
++    pub save_also_as_json: bool,
++    pub use_reference_folders: bool,
++    pub dry_run: bool,
++    pub move_to_trash: bool,
++    pub hide_hard_links: bool,
+ }
+ 
+ #[derive(Debug, Clone, Default)]
+diff --git a/misc/ai_translate/ftl_utils.py b/misc/ai_translate/ftl_utils.py
+index 395698a..d3164b7 100644
+--- a/misc/ai_translate/ftl_utils.py
++++ b/misc/ai_translate/ftl_utils.py
+@@ -102,7 +102,9 @@ def find_ftl_file_in_folder(folder: pathlib.Path) -> pathlib.Path | None:
+     if len(ftl_files) == 1:
+         return ftl_files[0]
+     elif len(ftl_files) > 1:
+-        print(f"  Warning: Multiple FTL files found in {folder}, using first one: {ftl_files[0].name}")
++        print(
++            f"  Warning: Multiple FTL files found in {folder}, using first one: {ftl_files[0].name}"
++        )
+         return ftl_files[0]
+ 
+     return None
+diff --git a/misc/ai_translate/translate.py b/misc/ai_translate/translate.py
+index 9f59091..1f072a4 100644
+--- a/misc/ai_translate/translate.py
++++ b/misc/ai_translate/translate.py
+@@ -114,7 +114,9 @@ def analyze_language_file(
+     return missing_keys, len(missing_keys), ignored_count
+ 
+ 
+-def update_language_file_content(lang_file: pathlib.Path, translations: Dict[str, str]) -> None:
++def update_language_file_content(
++    lang_file: pathlib.Path, translations: Dict[str, str]
++) -> None:
+     if not translations:
+         return
+ 
+@@ -150,7 +152,11 @@ def update_language_file_content(lang_file: pathlib.Path, translations: Dict[str
+                     if lines[i] and lines[i][0] == " ":
+                         i += 1
+                     elif not lines[i].strip():
+-                        if i + 1 < len(lines) and lines[i + 1] and lines[i + 1][0] == " ":
++                        if (
++                            i + 1 < len(lines)
++                            and lines[i + 1]
++                            and lines[i + 1][0] == " "
++                        ):
+                             i += 1
+                         else:
+                             break
+@@ -226,7 +232,9 @@ def process_i18n_folder(
+             if not lang_file.exists():
+                 lang_file.touch()
+ 
+-        missing_keys, count, ignored_count = analyze_language_file(base_entries, lang_file, lang_code)
++        missing_keys, count, ignored_count = analyze_language_file(
++            base_entries, lang_file, lang_code
++        )
+         analysis_results[lang_code] = {
+             "name": lang_name,
+             "file": lang_file,
+@@ -299,7 +307,11 @@ Examples:
+         """,
+     )
+ 
+-    parser.add_argument("i18n_folder", type=str, help="Path to the i18n folder containing language subdirectories")
++    parser.add_argument(
++        "i18n_folder",
++        type=str,
++        help="Path to the i18n folder containing language subdirectories",
++    )
+ 
+     parser.add_argument(
+         "--model",
+@@ -308,9 +320,17 @@ Examples:
+         help=f"Ollama model to use for translation (default: {DEFAULT_MODEL})",
+     )
+ 
+-    parser.add_argument("--dry-run", action="store_true", help="Show what would be translated without making changes")
++    parser.add_argument(
++        "--dry-run",
++        action="store_true",
++        help="Show what would be translated without making changes",
++    )
+ 
+-    parser.add_argument("--languages", nargs="+", help="Only process specific languages (e.g., --languages pl de fr)")
++    parser.add_argument(
++        "--languages",
++        nargs="+",
++        help="Only process specific languages (e.g., --languages pl de fr)",
++    )
+ 
+     args = parser.parse_args()
+ 
+diff --git a/misc/ai_translate/validate_translations.py b/misc/ai_translate/validate_translations.py
+index 01b7ffb..dafe223 100644
+--- a/misc/ai_translate/validate_translations.py
++++ b/misc/ai_translate/validate_translations.py
+@@ -47,9 +47,13 @@ def validate_translation(base_value: str, translated_value: str, key: str) -> Li
+     extra = translated_placeholders - base_placeholders
+ 
+     if missing:
+-        errors.append(f"  {Colors.RED}Missing placeholders:{Colors.RESET} {', '.join(sorted(missing))}")
++        errors.append(
++            f"  {Colors.RED}Missing placeholders:{Colors.RESET} {', '.join(sorted(missing))}"
++        )
+     if extra:
+-        errors.append(f"  {Colors.RED}Extra placeholders:{Colors.RESET} {', '.join(sorted(extra))}")
++        errors.append(
++            f"  {Colors.RED}Extra placeholders:{Colors.RESET} {', '.join(sorted(extra))}"
++        )
+ 
+     base_counts = count_placeholders(base_value)
+     translated_counts = count_placeholders(translated_value)
+@@ -124,7 +128,11 @@ def fix_language_file(lang_file: pathlib.Path, keys_to_remove: Set[str]) -> int:
+                     if lines[i] and lines[i][0] == " ":
+                         i += 1
+                     elif not lines[i].strip():
+-                        if i + 1 < len(lines) and lines[i + 1] and lines[i + 1][0] == " ":
++                        if (
++                            i + 1 < len(lines)
++                            and lines[i + 1]
++                            and lines[i + 1][0] == " "
++                        ):
+                             i += 1
+                         else:
+                             break
+@@ -163,7 +171,9 @@ def fix_trailing_dots_in_language_file(
+                 block_start = i
+                 block_lines = [lines[i]]
+                 j = i + 1
+-                while j < len(lines) and (lines[j].startswith(" ") or lines[j].strip() == ""):
++                while j < len(lines) and (
++                    lines[j].startswith(" ") or lines[j].strip() == ""
++                ):
+                     # include continuation or empty lines that might be part of the value
+                     # stop when next non-indented non-empty line appears
+                     if lines[j].startswith(" ") or lines[j] == "":
+@@ -245,7 +255,9 @@ def fix_trailing_dots_in_language_file(
+ 
+ 
+ def validate_i18n_folder(
+-    i18n_path: pathlib.Path, target_languages: List[str] | None = None, fix_mode: bool = False
++    i18n_path: pathlib.Path,
++    target_languages: List[str] | None = None,
++    fix_mode: bool = False,
+ ) -> int:
+     print(f"Validating i18n folder: {i18n_path}")
+ 
+@@ -289,7 +301,11 @@ def validate_i18n_folder(
+         errors = validate_language_file(base_entries, lang_file, lang_code)
+ 
+         if errors:
+-            errors_by_language[lang_code] = {"name": lang_name, "file": lang_file, "errors": errors}
++            errors_by_language[lang_code] = {
++                "name": lang_name,
++                "file": lang_file,
++                "errors": errors,
++            }
+             total_errors += len(errors)
+ 
+     if not errors_by_language:
+@@ -332,12 +348,16 @@ def validate_i18n_folder(
+                 removed = fix_language_file(lang_file, keys_to_remove)
+ 
+             if keys_to_fix_dots:
+-                fixed = fix_trailing_dots_in_language_file(lang_file, base_entries, keys_to_fix_dots)
++                fixed = fix_trailing_dots_in_language_file(
++                    lang_file, base_entries, keys_to_fix_dots
++                )
+ 
+             total_removed += removed
+             total_fixed += fixed
+ 
+-            print(f"{lang_code:8} ({data['name']:25}) - removed {removed:3} entry(ies), fixed {fixed:3} entry(ies)")
++            print(
++                f"{lang_code:8} ({data['name']:25}) - removed {removed:3} entry(ies), fixed {fixed:3} entry(ies)"
++            )
+ 
+         print(
+             f"\n{Colors.GREEN}Fixed! Removed {total_removed} entry(ies) and updated {total_fixed} translation(s) with trailing-dot mismatches{Colors.RESET}"
+@@ -358,7 +378,9 @@ def validate_i18n_folder(
+ 
+     for lang_code in sorted(errors_by_language.keys()):
+         data = errors_by_language[lang_code]
+-        print(f"\n{Colors.BOLD}{lang_code} ({data['name']}) - {data['file'].name}{Colors.RESET}")
++        print(
++            f"\n{Colors.BOLD}{lang_code} ({data['name']}) - {data['file'].name}{Colors.RESET}"
++        )
+         print("-" * 70)
+ 
+         for key, error_messages in sorted(data["errors"].items()):
+@@ -384,11 +406,23 @@ Examples:
+         """,
+     )
+ 
+-    parser.add_argument("i18n_folder", type=str, help="Path to the i18n folder containing language subdirectories")
++    parser.add_argument(
++        "i18n_folder",
++        type=str,
++        help="Path to the i18n folder containing language subdirectories",
++    )
+ 
+-    parser.add_argument("--languages", nargs="+", help="Only validate specific languages (e.g., --languages pl de fr)")
++    parser.add_argument(
++        "--languages",
++        nargs="+",
++        help="Only validate specific languages (e.g., --languages pl de fr)",
++    )
+ 
+-    parser.add_argument("--fix", action="store_true", help="Automatically remove entries with placeholder errors")
++    parser.add_argument(
++        "--fix",
++        action="store_true",
++        help="Automatically remove entries with placeholder errors",
++    )
+ 
+     args = parser.parse_args()
+ 
+diff --git a/misc/delete_unused_krokiet_slint_imports.py b/misc/delete_unused_krokiet_slint_imports.py
+index f6875ef..bb90772 100644
+--- a/misc/delete_unused_krokiet_slint_imports.py
++++ b/misc/delete_unused_krokiet_slint_imports.py
+@@ -14,7 +14,10 @@ folder = sys.argv[1]
+ ui_path = f"{script_path}/../{folder}/ui"
+ 
+ collected_files = [
+-    os.path.join(root, file) for root, _, files in os.walk(ui_path) for file in files if file.endswith(".slint")
++    os.path.join(root, file)
++    for root, _, files in os.walk(ui_path)
++    for file in files
++    if file.endswith(".slint")
+ ]
+ 
+ for file_path in collected_files:
+@@ -39,7 +42,11 @@ for file_path in collected_files:
+     imports: dict[str, set[str]] = {}
+ 
+     for import_line in imports_to_check:
+-        imported_items = [i.strip() for i in import_line.split("{")[1].split("}")[0].split(",") if len(i.strip()) > 0]
++        imported_items = [
++            i.strip()
++            for i in import_line.split("{")[1].split("}")[0].split(",")
++            if len(i.strip()) > 0
++        ]
+         if not imported_items:
+             continue
+ 
+diff --git a/misc/find_unused_callbacks.py b/misc/find_unused_callbacks.py
+index 87be9ec..4f223a2 100644
+--- a/misc/find_unused_callbacks.py
++++ b/misc/find_unused_callbacks.py
+@@ -78,7 +78,9 @@ for callback in callbacks:
+         print(f"Error: Callback {format_green(callback)} has NO Rust implementation")
+         errors_found = True
+     elif len(matches) > 1 and callback not in allowed_multiple:
+-        print(f"Error: Callback {format_green(callback)} has {len(matches)} Rust implementations (expected 1)")
++        print(
++            f"Error: Callback {format_green(callback)} has {len(matches)} Rust implementations (expected 1)"
++        )
+         errors_found = True
+ 
+ if errors_found:
+diff --git a/misc/find_unused_fluent_translations.py b/misc/find_unused_fluent_translations.py
+index 71d0b69..0c1c22a 100644
+--- a/misc/find_unused_fluent_translations.py
++++ b/misc/find_unused_fluent_translations.py
+@@ -40,7 +40,9 @@ def extract_ftl_keys(ftl_path: str) -> list[str]:
+             seen.add(key)
+ 
+     if duplicates:
+-        print(f"Warning: Found duplicated keys in {format_green(ftl_path)}: {format_green(', '.join(duplicates))}")
++        print(
++            f"Warning: Found duplicated keys in {format_green(ftl_path)}: {format_green(', '.join(duplicates))}"
++        )
+         exit(1)
+ 
+     return keys
+diff --git a/misc/find_unused_settings_properties.py b/misc/find_unused_settings_properties.py
+index 5080d21..55b1a88 100644
+--- a/misc/find_unused_settings_properties.py
++++ b/misc/find_unused_settings_properties.py
+@@ -14,7 +14,9 @@ def extract_settings_properties(settings_file: Path) -> Dict[str, str]:
+     # in-out property <bool> dark_theme: true;
+     # in-out property <string> language_value: "English";
+     # out property <length> path_px: 350px;
+-    property_pattern = r"(?:in-out|out|in)\s+property\s+<([^>]+)>\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*:"
++    property_pattern = (
++        r"(?:in-out|out|in)\s+property\s+<([^>]+)>\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*:"
++    )
+ 
+     for match in re.finditer(property_pattern, content):
+         prop_type = match.group(1).strip()
+@@ -35,7 +37,9 @@ def find_rust_files(project_root: Path, folder: str) -> List[Path]:
+     return rust_files
+ 
+ 
+-def check_property_usage_in_rust(rust_files: List[Path], property_name: str) -> Tuple[bool, bool]:
++def check_property_usage_in_rust(
++    rust_files: List[Path], property_name: str
++) -> Tuple[bool, bool]:
+     getter_pattern = rf"\.get_{property_name}\("
+     setter_pattern = rf"\.set_{property_name}\("
+ 
+diff --git a/misc/find_unused_slint_translations.py b/misc/find_unused_slint_translations.py
+index 03f1ab2..2e0e04e 100644
+--- a/misc/find_unused_slint_translations.py
++++ b/misc/find_unused_slint_translations.py
+@@ -71,7 +71,9 @@ for candidate in translation_rs_candidates:
+         break
+ 
+ if rust_translation_file is None:
+-    print(f"Error: Could not find a translation Rust file in {folder}/src/ (tried: {translation_rs_candidates})")
++    print(
++        f"Error: Could not find a translation Rust file in {folder}/src/ (tried: {translation_rs_candidates})"
++    )
+     sys.exit(1)
+ 
+ rust_translation_content = open(rust_translation_file, "r", encoding="utf-8").read()
+@@ -104,7 +106,8 @@ missing_in_rust.sort()
+ 
+ if len(missing_in_rust) > 0:
+     print(
+-        "---- Arguments not used in Rust translation file: " + ", ".join(format_green(arg) for arg in missing_in_rust)
++        "---- Arguments not used in Rust translation file: "
++        + ", ".join(format_green(arg) for arg in missing_in_rust)
+     )
+ if len(missing_in_slint) > 0:
+     print(
+diff --git a/misc/gen_android_icons.py b/misc/gen_android_icons.py
+index d118f0b..eb50e45 100755
+--- a/misc/gen_android_icons.py
++++ b/misc/gen_android_icons.py
+@@ -56,7 +56,9 @@ def render_cairosvg(svg: Path, out: Path, size: int) -> None:
+     import cairosvg  # type: ignore
+ 
+     out.parent.mkdir(parents=True, exist_ok=True)
+-    cairosvg.svg2png(url=str(svg), write_to=str(out), output_width=size, output_height=size)
++    cairosvg.svg2png(
++        url=str(svg), write_to=str(out), output_width=size, output_height=size
++    )
+ 
+ 
+ def render_inkscape(svg: Path, out: Path, size: int) -> None:
+@@ -87,7 +89,9 @@ def render_inkscape(svg: Path, out: Path, size: int) -> None:
+             text=True,
+         )
+         if result2.returncode != 0:
+-            raise RuntimeError(f"inkscape failed (exit {result.returncode}):\n{result.stderr}\n{result2.stderr}")
++            raise RuntimeError(
++                f"inkscape failed (exit {result.returncode}):\n{result.stderr}\n{result2.stderr}"
++            )
+ 
+ 
+ def main() -> None:
+@@ -101,7 +105,10 @@ def main() -> None:
+ 
+     if not svg.exists():
+         print(f"error: SVG not found: {svg}", file=sys.stderr)
+-        print("Usage: python misc/gen_android_icons.py [path/to/logo.svg]", file=sys.stderr)
++        print(
++            "Usage: python misc/gen_android_icons.py [path/to/logo.svg]",
++            file=sys.stderr,
++        )
+         sys.exit(1)
+ 
+     res_dir = project_root / "cedinia" / "res"
+@@ -114,7 +121,9 @@ def main() -> None:
+         print("renderer: cairosvg")
+     except ImportError:
+         render = render_inkscape
+-        print("renderer: inkscape  (cairosvg not found - install with: pip install cairosvg)")
++        print(
++            "renderer: inkscape  (cairosvg not found - install with: pip install cairosvg)"
++        )
+ 
+     print(f"source  : {svg}")
+     print()
+@@ -130,7 +139,9 @@ def main() -> None:
+     # Adaptive icon foreground PNG (drawable-nodpi so the system uses it unscaled)
+     fg_png = res_dir / "drawable-nodpi" / "ic_launcher_fg_src.png"
+     render(svg, fg_png, FOREGROUND_SIZE)
+-    print(f"  {str(fg_png.relative_to(project_root)): <60}  {FOREGROUND_SIZE}×{FOREGROUND_SIZE} px")
++    print(
++        f"  {str(fg_png.relative_to(project_root)): <60}  {FOREGROUND_SIZE}×{FOREGROUND_SIZE} px"
++    )
+ 
+     # Adaptive icon foreground XML (bitmap wrapper)
+     fg_xml = res_dir / "drawable" / "ic_launcher_foreground.xml"
+diff --git a/misc/simplify_and_minify_svg.py b/misc/simplify_and_minify_svg.py
+index 253e36a..026daf0 100644
+--- a/misc/simplify_and_minify_svg.py
++++ b/misc/simplify_and_minify_svg.py
+@@ -13,7 +13,9 @@ def run_cmd(cmd: list[str], cwd: Path | None = None) -> bool:
+     print(f"Running: {' '.join(cmd)}")
+     if FAKE_RUN:
+         return True
+-    result = subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
++    result = subprocess.run(
++        cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
++    )
+     if result.returncode != 0:
+         print(f"Error: {result.stderr}")
+     return result.returncode == 0
+@@ -21,7 +23,13 @@ def run_cmd(cmd: list[str], cwd: Path | None = None) -> bool:
+ 
+ def simplify_svg(svg_path: Path) -> None:
+     run_cmd(
+-        ["inkscape", str(svg_path), "--export-type=svg", "--export-text-to-path", "--export-filename=" + str(svg_path)]
++        [
++            "inkscape",
++            str(svg_path),
++            "--export-type=svg",
++            "--export-text-to-path",
++            "--export-filename=" + str(svg_path),
++        ]
+     )
+ 
+     cleaned_path = svg_path.with_suffix(".cleaned.svg")
+@@ -47,7 +55,9 @@ def main() -> None:
+ 
+     disabled_contains_names = ["krokiet_logo"]
+     svg_files = [
+-        svg_file for svg_file in svg_files if not any(name in svg_file.name for name in disabled_contains_names)
++        svg_file
++        for svg_file in svg_files
++        if not any(name in svg_file.name for name in disabled_contains_names)
+     ]
+ 
+     if not svg_files:
+diff --git a/misc/test_compilation_speed_size/generate_md_and_plots.py b/misc/test_compilation_speed_size/generate_md_and_plots.py
+index 4e2d018..fffe692 100644
+--- a/misc/test_compilation_speed_size/generate_md_and_plots.py
++++ b/misc/test_compilation_speed_size/generate_md_and_plots.py
+@@ -11,10 +11,18 @@ from pandas import Series
+ df = pd.read_csv("compilation_results.txt", sep="|", engine="python")
+ df = df.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
+ 
+-df["Output File Size (bytes)"] = pd.to_numeric(df["Output File Size(in bytes)"], errors="coerce")
+-df["Target Folder Size (bytes)"] = pd.to_numeric(df["Target Folder Size(in bytes)"], errors="coerce")
+-df["Compilation Time (seconds)"] = pd.to_numeric(df["Compilation Time(seconds)"], errors="coerce")
+-df["Rebuild Time (seconds)"] = pd.to_numeric(df["Rebuild Time(seconds)"], errors="coerce")
++df["Output File Size (bytes)"] = pd.to_numeric(
++    df["Output File Size(in bytes)"], errors="coerce"
++)
++df["Target Folder Size (bytes)"] = pd.to_numeric(
++    df["Target Folder Size(in bytes)"], errors="coerce"
++)
++df["Compilation Time (seconds)"] = pd.to_numeric(
++    df["Compilation Time(seconds)"], errors="coerce"
++)
++df["Rebuild Time (seconds)"] = pd.to_numeric(
++    df["Rebuild Time(seconds)"], errors="coerce"
++)
+ 
+ matplotlib.rcParams["font.family"] = "Noto Sans"
+ FONT_SIZE = 13
