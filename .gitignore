@@ -1,1 +1,17 @@
-target/
+# rust-generated files
+**/*.rs.bk
+/target/
+
+# editors
+.idea/
+.vscode/
+
+# os
+.DS_Store
+Thumbs.db
+
+# environment variables
+.env
+env/
+
+# custom exclusions

@@ -38,7 +38,7 @@ impl FileMetadata {
         }
 
         FileMetadata {
-            path: path,
+            path,
             display_path,
             size_bytes: size,
             width: 0,
@@ -102,11 +102,11 @@ where
 
     connect_progress(&progress_receiver);
 
-    let results = calculate_thread
-        .join()
-        .expect("Failed to join calculation thread");
 
-    results
+
+    calculate_thread
+        .join()
+        .expect("Failed to join calculation thread")
 }
 
 pub(crate) fn canonicalize_dirs(dirs: &[PathBuf]) -> Vec<(PathBuf, String)> {
@@ -145,12 +145,12 @@ pub(crate) fn canonicalize_dirs(dirs: &[PathBuf]) -> Vec<(PathBuf, String)> {
         }
     }
 
-    roots.sort_by(|a, b| b.0.as_os_str().len().cmp(&a.0.as_os_str().len()));
+    roots.sort_by_key(|a| std::cmp::Reverse(a.0.as_os_str().len()));
 
     roots
 }
 
-/// Czkawka's set_common_settings without setting the thread number and requiring less traits
+/// Sets common settings like czkawka set_common_settings, without the thread number and with fewer trait bounds.
 pub fn set_common_settings<T>(
     component: &mut T,
     common_cli_items: &CommonCliItems,

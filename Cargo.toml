@@ -2,19 +2,23 @@
 name = "image_dedup"
 version = "0.1.0"
 edition = "2024"
+description = "Terminal UI for finding and removing duplicate images and videos, and sorting media, built on czkawka_core."
 
 [dependencies]
 clap = { version = "4.5", features = ["derive", "color"] }
 
 log = "0.4.22"
-czkawka_core = { path = "czkawka/czkawka_core", version = "11"}
+czkawka_core = { path = "vendor/czkawka/czkawka_core", version = "11" }
 indicatif = "0.18"
 crossbeam-channel = { version = "0.5", features = [] }
 ctrlc = { version = "3.4", features = ["termination"] }
 humansize = "2.1"
 
 ratatui = "0.30"
-ratatui-image = { version = "11.0", default-features = false, features = ["image-defaults", "crossterm"] }
+ratatui-image = { version = "11.0", default-features = false, features = [
+  "image-defaults",
+  "crossterm",
+] }
 anyhow = "1.0"
 crossterm = "0.29"
 image = "0.25.10"
@@ -24,3 +28,8 @@ rayon = "1.12"
 default = []
 heif = ["czkawka_core/heif"]
 no_colors = []
+
+[profile.release]
+codegen-units = 1
+debug = false
+lto = "fat"

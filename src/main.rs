@@ -22,11 +22,11 @@ fn main() {
 
     let args = Args::parse();
 
-    // Set threads once
+    // set threads once.
     set_number_of_threads(args.common_cli_items.thread_number);
     let roots = canonicalize_dirs(&args.common_cli_items.directories);
 
-    // Setup global stop flag and Ctrl+C handler once
+    // set up global stop flag and Ctrl+C handler once.
     let stop_flag = Arc::new(AtomicBool::new(false));
     let store_flag_cloned = stop_flag.clone();
 

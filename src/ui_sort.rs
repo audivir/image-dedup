@@ -58,8 +58,8 @@ pub(crate) fn run_sort_ui_app(items: Vec<FileMetadata>) -> Result<()> {
     let (task_tx, res_rx, mut terminal, current_index) = init_app()?;
 
     let mut default_categories: [String; 9] = Default::default();
-    for i in 0..9 {
-        default_categories[i] = format!("Folder_{}", i + 1);
+    for (i, category) in default_categories.iter_mut().enumerate() {
+        *category = format!("Folder_{}", i + 1);
     }
 
     let mut app = SortApp {
@@ -73,7 +73,7 @@ pub(crate) fn run_sort_ui_app(items: Vec<FileMetadata>) -> Result<()> {
 
         terminal.draw(|f| draw_sort_ui(f, &mut app))?;
 
-        // 150ms timeout for GIF/Video animation
+        // 150ms timeout for GIF/Video animation.
         if event::poll(Duration::from_millis(150))? {
             if let Event::Key(key) = event::read()? {
                 let current_mode = app.app.mode.clone();
@@ -320,10 +320,7 @@ fn draw_sort_ui(f: &mut ratatui::Frame, app: &mut SortApp) {
         cat_lines.push(Line::from(""));
 
         for i in 0..9 {
-            let is_editing = match app.app.mode {
-                SortAppMode::NamingCategory(idx) if idx == i => true,
-                _ => false,
-            };
+            let is_editing = matches!(app.app.mode, SortAppMode::NamingCategory(idx) if idx == i);
 
             let num_span = Span::styled(format!("{}: ", i + 1), Style::default().fg(Color::Yellow));
 
@@ -357,7 +354,7 @@ fn sort_current_file(app: &mut SortApp, cat_idx: usize) {
     let source = app.app.items[app.app.current].path.clone();
     let target_dir_name = &app.categories[cat_idx];
 
-    // Sort relative to the current working directory
+    // sort relative to the current working directory.
     let target_dir = Path::new(target_dir_name);
     if !target_dir.exists() {
         let _ = fs::create_dir_all(target_dir);

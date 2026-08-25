@@ -86,7 +86,7 @@ where
             current_index,
         };
 
-        // Aggressively preload initially
+        // aggressively preload initially.
         for i in 0..5 {
             app.request_load(i);
         }
@@ -123,11 +123,11 @@ where
         self.current_index.store(self.current, Ordering::Relaxed);
         self.reset_state();
 
-        // Cleanup old protocols to save RAM
+        // cleanup old protocols to save RAM.
         let keep_start = self.current.saturating_sub(1);
         self.preloaded.retain(|&k, _| k >= keep_start);
 
-        // Aggressively request next loads
+        // aggressively request next loads.
         for i in 0..5 {
             self.request_load(self.current + i);
         }
@@ -154,7 +154,7 @@ fn worker_thread(
     while let Ok(task) = task_rx.recv() {
         match task {
             WorkerTask::Load(idx, load_task) => {
-                // If user has quickly skipped past this task, cancel processing to save resources
+                // if user has quickly skipped past this task, cancel processing to save resources.
                 if idx < current_index.load(Ordering::Relaxed) {
                     continue;
                 }
@@ -170,7 +170,7 @@ fn worker_thread(
                     }
                 };
 
-                // Final check before sending back, purely optional but good for rapid skipping
+                // final check before sending back, purely optional but good for rapid skipping.
                 if idx >= current_index.load(Ordering::Relaxed) {
                     let _ = res_tx.send(WorkerResult::Loaded(idx, result));
                 }
@@ -195,12 +195,14 @@ fn worker_thread(
     }
 }
 
-pub(crate) fn init_app() -> Result<(
+type AppHandles = (
     Sender<WorkerTask>,
     Receiver<WorkerResult>,
     Terminal<CrosstermBackend<Stdout>>,
     Arc<AtomicUsize>,
-)> {
+);
+
+pub(crate) fn init_app() -> Result<AppHandles> {
     let (task_tx, task_rx) = unbounded();
     let (res_tx, res_rx) = unbounded();
     let current_index = Arc::new(AtomicUsize::new(0));
@@ -225,7 +227,7 @@ pub(crate) fn quit_app(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Res
     Ok(())
 }
 
-/// Extract duration with ffprobe
+/// Extracts the media duration using ffprobe.
 pub(crate) fn get_duration(path: &PathBuf) -> Option<String> {
     let output = Command::new("ffprobe")
         .args([
@@ -236,7 +238,7 @@ pub(crate) fn get_duration(path: &PathBuf) -> Option<String> {
             "-of",
             "default=noprint_wrappers=1:nokey=1",
         ])
-        .arg(&path)
+        .arg(path)
         .output();
 
     if let Ok(out) = output
@@ -251,7 +253,7 @@ pub(crate) fn get_duration(path: &PathBuf) -> Option<String> {
     None
 }
 
-/// Generate quick GIF
+/// Generates a short preview GIF for the media at path.
 pub(crate) fn get_gif(path: &PathBuf) -> PathBuf {
     let temp_dir = std::env::temp_dir();
     use std::collections::hash_map::DefaultHasher;
@@ -268,7 +270,7 @@ pub(crate) fn get_gif(path: &PathBuf) -> PathBuf {
             .arg("-t")
             .arg("2") // 2 seconds duration
             .arg("-i")
-            .arg(&path)
+            .arg(path)
             .arg("-vf")
             .arg("fps=6,scale=320:-1:flags=lanczos")
             .arg("-loop")
@@ -308,13 +310,13 @@ pub(crate) fn render_gif_frames(
 ) -> Option<(u32, u32, String)> {
     let mut metadata: Option<(u32, u32, String)> = None;
 
-    if let Ok(file) = fs::File::open(&path) {
-        // wrap the file in a BufReader
+    if let Ok(file) = fs::File::open(path) {
+        // wrap the file in a BufReader.
         let reader = io::BufReader::new(file);
 
-        // pass the buffered reader to the decoder
-        if let Ok(decoder) = GifDecoder::new(reader) {
-            if let Ok(decoded_frames) = decoder.into_frames().collect_frames() {
+        // pass the buffered reader to the decoder.
+        if let Ok(decoder) = GifDecoder::new(reader)
+            && let Ok(decoded_frames) = decoder.into_frames().collect_frames() {
                 for frame in decoded_frames {
                     let full_img = DynamicImage::ImageRgba8(frame.into_buffer());
                     let (scaled_img, metadata_opt) =
@@ -323,7 +325,6 @@ pub(crate) fn render_gif_frames(
                     frames.push(scaled_img);
                 }
             }
-        }
     }
 
     metadata
@@ -334,7 +335,7 @@ pub(crate) fn process_single_image(item: &mut FileMetadata) -> Vec<DynamicImage>
     let mut file_to_open = item.path.clone();
     let mut is_gif = file_to_open
         .extension()
-        .map_or(false, |ext| ext.to_ascii_lowercase() == "gif");
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("gif"));
 
     if item.is_video {
         item.dimensions = get_duration(&item.path).unwrap_or("No duration available".into());
@@ -344,19 +345,18 @@ pub(crate) fn process_single_image(item: &mut FileMetadata) -> Vec<DynamicImage>
 
     let mut metadata: Option<(u32, u32, String)> = None;
 
-    // decode image / animation
+    // decode image / animation.
     if is_gif {
         metadata = render_gif_frames(&mut frames, &file_to_open, item.is_video);
     }
 
-    // fallback to static if GIF extraction failed, or if it's a regular PNG/JPG
-    if frames.is_empty() {
-        if let Ok(full_img) = image::open(&file_to_open) {
+    // fallback to static if GIF extraction failed, or if it's a regular PNG/JPG.
+    if frames.is_empty()
+        && let Ok(full_img) = image::open(&file_to_open) {
             let (scaled_img, metadata_opt) = push_frame(full_img, true, item.is_video);
             metadata = metadata_opt;
             frames.push(scaled_img);
         }
-    }
 
     if let Some((w, h, d)) = metadata {
         item.width = w;
@@ -367,11 +367,11 @@ pub(crate) fn process_single_image(item: &mut FileMetadata) -> Vec<DynamicImage>
     frames
 }
 
-/// Multithreaded Processing (ffmpeg + decoding)
+/// Decodes images across multiple threads using ffmpeg.
 pub(crate) fn process_images(items: &mut Vec<FileMetadata>) -> Vec<Vec<DynamicImage>> {
     items
         .par_iter_mut()
-        .map(|item| process_single_image(item))
+        .map(process_single_image)
         .collect()
 }
 

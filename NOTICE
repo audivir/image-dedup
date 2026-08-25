@@ -1,0 +1,5 @@
+This project ports and links against code from czkawka (https://github.com/qarmin/czkawka),
+Copyright (c) qarmin and contributors, licensed under the MIT License.
+
+The `vendor/czkawka` directory is a git submodule pointing at the upstream czkawka
+repository, with local modifications applied from `czkawka.patch`.

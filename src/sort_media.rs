@@ -57,11 +57,7 @@ impl SortMedia {
             .media_files
             .clone()
             .into_values()
-            .map(|fe| {
-                let mut entries = Vec::new();
-                entries.push(fe);
-                entries
-            })
+            .map(|fe| vec![fe])
             .collect();
     }
     pub fn get_media_files(&mut self) -> &Vec<Vec<FileEntry>> {
@@ -109,7 +105,6 @@ impl Search for SortMedia {
                 || !self.common_data.directories.reference_files.is_empty();
             if self.check_for_media_files(stop_flag, progress_sender) == WorkContinueStatus::Stop {
                 self.common_data.stopped_search = true;
-                return;
             }
             // if self.hash_images(stop_flag, progress_sender) == WorkContinueStatus::Stop {
             //     self.common_data.stopped_search = true;

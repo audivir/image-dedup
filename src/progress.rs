@@ -11,7 +11,7 @@ pub(crate) fn connect_progress(progress_receiver: &Receiver<ProgressData>) {
     let mut pb = ProgressBar::new(1);
     let mut latest_id = None;
     while let Ok(progress_data) = progress_receiver.recv() {
-        // We only need to recreate progress bar if stage changed
+        // we only need to recreate progress bar if stage changed.
         if latest_id != Some(progress_data.current_stage_idx) {
             pb.finish_and_clear();
             if progress_data.current_stage_idx == 0 {

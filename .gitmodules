@@ -1,3 +1,3 @@
 [submodule "czkawka"]
-	path = czkawka
-	url = https://github.com/qarmin/czkawka
+    path = vendor/czkawka
+    url = https://github.com/qarmin/czkawka

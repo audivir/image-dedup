@@ -67,7 +67,7 @@ pub(crate) fn run_dedup_ui_app(groups: Vec<Vec<FileMetadata>>) -> Result<()> {
 
         terminal.draw(|f| draw_ui(f, &mut app))?;
 
-        // 150ms timeout creates ~6.6 FPS animation matching our ffmpeg output!
+        // 150ms timeout creates ~6.6 FPS animation matching our ffmpeg output.
         if event::poll(Duration::from_millis(150))? {
             if let Event::Key(key) = event::read()? {
                 let current_len = app.app.items[app.app.current].len();
@@ -187,7 +187,7 @@ pub(crate) fn run_dedup_ui_app(groups: Vec<Vec<FileMetadata>>) -> Result<()> {
                 }
             }
         } else {
-            // Tick the animation!
+            // tick the animation.
             app.app.animation_tick = app.app.animation_tick.wrapping_add(1);
         }
 
@@ -292,10 +292,10 @@ fn draw_ui(f: &mut ratatui::Frame, app: &mut DedupApp) {
         f.render_widget(block, *area);
 
         let mut rendered = false;
-        if let Some(protocols_group) = preloaded_protocols.as_mut() {
-            if let Some(protocols) = protocols_group.get_mut(i) {
+        if let Some(protocols_group) = preloaded_protocols.as_mut()
+            && let Some(protocols) = protocols_group.get_mut(i) {
                 if !protocols.is_empty() {
-                    // animate by selecting frame based on UI tick
+                    // animate by selecting frame based on UI tick.
                     let frame_idx = app.app.animation_tick % protocols.len();
                     if let Some(protocol) = protocols.get_mut(frame_idx) {
                         let image_widget = StatefulImage::new();
@@ -307,7 +307,6 @@ fn draw_ui(f: &mut ratatui::Frame, app: &mut DedupApp) {
                     rendered = true;
                 }
             }
-        }
 
         if !rendered {
             f.render_widget(Paragraph::new("Loading..."), inner_area);
