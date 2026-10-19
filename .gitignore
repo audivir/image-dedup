@@ -1,6 +1,7 @@
 # rust-generated files
 **/*.rs.bk
 /target/
+Cargo.lock
 
 # editors
 .idea/
